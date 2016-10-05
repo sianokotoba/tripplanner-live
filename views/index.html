@@ -1,0 +1,154 @@
+{% extends 'layout.html' %}
+
+{% block title %}Your Trip{% endblock %}
+
+{% block content %}
+<div id="app" class="clearfix">
+  <div class="map-container col-sm-8 col-lg-9">
+    <div>
+      <div id="map-canvas"></div>
+    </div>
+  </div>
+  <div id="control-panel" class="col-sm-4 col-lg-3 clearfix">
+    <div class="col-xs-6 col-sm-12">
+      <div class="panel panel-default">
+        <div class="panel-body" id="options-panel">
+          <div>
+            <h4>Hotels</h4>
+            <select data-type="hotel" id="hotel-choices">
+              {% for item in hotels %}
+                <option>{{item.name}}</option>
+              {% endfor %}
+            </select>
+            <button data-action="add" class="btn btn-primary btn-circle pull-right">+</button>
+          </div>
+          <div>
+            <h4>Restaurants</h4>
+            <select data-type="restaurant" id="restaurant-choices">
+              {% for item in restaurants %}
+                <option>{{item.name}}</option>
+              {% endfor %}
+            </select>
+            <button data-action="add" class="btn btn-primary btn-circle pull-right">+</button>
+          </div>
+          <div>
+            <h4>Activities</h4>
+            <select data-type="activity" id="activity-choices">
+              {% for item in activities %}
+                <option>{{item.name}}</option>
+              {% endfor %}
+            </select>
+            <button data-action="add" class="btn btn-primary btn-circle pull-right">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xs-6 col-sm-12">
+      <h3>
+        <span id="day-title">
+          <span>Day 2</span>
+          <button class="btn btn-xs btn-danger remove btn-circle">x</button>
+        </span>
+      </h3>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="day-buttons">
+            <button class="btn btn-circle day-btn current-day">1</button><button class="btn btn-circle day-btn">2</button><button class="btn btn-circle day-btn">3</button><button class="btn btn-circle day-btn" id="day-add">+</button>
+          </div>
+        </div>
+        <div class="panel-body" id="itinerary">
+          <div>
+            <h4>My Hotel</h4>
+            <ul class="list-group" data-type="hotel">
+            </ul>
+          </div>
+          <div>
+            <h4>My Restaurants</h4>
+            <ul class="list-group" data-type="restaurant">
+            </ul>
+          </div>
+          <div>
+            <h4>My Activities</h4>
+            <ul class="list-group" data-type='activity'>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var hotels = {{ hotels | dump | safe }};
+  var restaurants = {{ restaurants | dump | safe }};
+  var activities = {{ activities | dump | safe }};
+
+  var map = initializeMap();
+  // drawMarker('hotel', [40.705137, -74.007624]);
+
+  var itineraryPerDays = {day1:[]};
+
+
+  jQuery(document).ready(function(){
+    $("#options-panel button").on('click', function() {
+      var placeName = $(this).prev().val(); // returns place name
+      var dataType = $(this).prev().attr("data-type"); // return data-type
+      $("#itinerary ul").each(function() {
+        if ($(this).attr("data-type") === dataType) {
+          var entry = $('<div class="itinerary-item"><span class="title">' + placeName + '</span><button class="btn btn-xs btn-danger remove btn-circle">x</button></div>');
+          // adding places to our itinerary
+          if (!$(this).find(".title").text().includes(placeName)) {
+            $(this).append(entry);
+            // deleting something from itinerary
+            $(".itinerary-item button").on('click', function() {
+              $(this).parent().remove();
+            });
+
+            // adding places to different days
+            var dayWhat = 'day'+$('.current-day').text()
+            if (!itineraryPerDays[dayWhat]) {
+              itineraryPerDays[dayWhat] = [placeName];
+            } else {
+              itineraryPerDays[dayWhat].push(placeName);
+            }
+
+            var dataTypeMap = {
+              hotel: hotels,
+              restaurant: restaurants,
+              activity: activities
+            }
+            var latLon;
+
+            dataTypeMap[dataType].forEach(item => {
+              if (item.name === placeName) {
+                latLon = item.place.location;
+              }
+            })
+
+            drawMarker(dataType, latLon, map);
+            var nestedARray = []
+          }
+        }
+      });
+    });
+    // adding a new day
+    $("#day-add").on('click', function() {
+      var number = $(this).siblings().length + 1;
+      var buttonEntry = $('<button class="btn btn-circle day-btn">' + number + '</button>')
+      buttonEntry.insertBefore($(this));
+
+      // switching days
+      $(".day-btn:not(#day-add)").on('click', function() {
+        $(".current-day").removeClass('current-day')
+        $(this).addClass('current-day');
+      });
+    });
+    // automatically adds a new day (day4 to days)
+    $('#day-add').trigger('click');
+
+  });
+
+
+</script>
+
+{% endblock %}
